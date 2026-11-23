@@ -19,14 +19,17 @@ const bodySchema = z.object({
 });
 
 // Gemini 2.x models return 404 for new API keys/projects (Google retired
-// them for new users in Sep 2026 and suggests gemini-3.8-flash). Primary is
-// gemini-3.5-flash, which works on a free AI Studio key; 3.8-flash is
-// Google's suggested replacement but is often overloaded (503), so the
-// lite model is a third fallback.
+// them for new users in Sep 2026). The 3.x Flash models are the current
+// ones, but individual models often return 503 "high demand" on the free
+// tier, so try several in turn — including the moving alias
+// gemini-flash-latest, which Google routes to whichever Flash model is
+// currently serving.
 const MODELS = [
   "gemini-3.5-flash",
+  "gemini-3.6-flash",
   "gemini-3.8-flash",
   "gemini-3.5-flash-lite",
+  "gemini-flash-latest",
 ] as const;
 
 async function generateWithModel(
@@ -96,6 +99,7 @@ export async function POST(request: Request) {
     cv,
   ].join("\n");
 
+  const failures: string[] = [];
   let lastError: unknown = null;
   for (const modelName of MODELS) {
     try {
@@ -104,6 +108,8 @@ export async function POST(request: Request) {
     } catch (err) {
       lastError = err;
       const message = err instanceof Error ? err.message : String(err);
+      failures.push(`${modelName}: ${message}`);
+      console.error(`Gemini generation failed (${modelName}):`, err);
       // Try the next model for a retired-model (404), overloaded (503),
       // or rate-limited (429) error. Anything else (e.g. a bad key) is
       // not worth retrying with another model.
@@ -115,11 +121,15 @@ export async function POST(request: Request) {
     }
   }
 
-  console.error("Gemini generation failed:", lastError);
+  console.error("Gemini generation failed (all models):", failures);
+  const allOverloaded =
+    failures.length > 0 &&
+    failures.every((f) => /503|429|overloaded|high demand/i.test(f));
   return NextResponse.json(
     {
-      error:
-        "Could not generate a cover letter right now. Please try again in a moment.",
+      error: allOverloaded
+        ? "Gemini is busy right now (high demand). Please try again in a minute."
+        : "Could not generate a cover letter right now. Please try again in a moment.",
     },
     { status: 502 },
   );
