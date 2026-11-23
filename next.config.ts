@@ -4,9 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
-  // pdf-parse v2 needs its pdf.js worker file from node_modules at runtime;
-  // bundling it breaks worker setup, so keep it external on the server.
-  serverExternalPackages: ["pdf-parse"],
+  // pdf-parse v2 and pdfjs-dist both need their pdf.js worker files from
+  // node_modules at runtime; bundling them breaks worker setup, so keep
+  // them external on the server.
+  serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
   turbopack: {
     rules: {
       "*.css": {

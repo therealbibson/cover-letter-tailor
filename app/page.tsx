@@ -102,6 +102,15 @@ export default function Home() {
       const form = new FormData();
       form.append("file", file);
       const res = await fetch("/api/extract-cv", { method: "POST", body: form });
+      if (res.status === 404) {
+        // Running an older build that has no upload endpoint (e.g. the
+        // original zip download). The API returns a clear message in that
+        // case instead of the generic one.
+        setError(
+          "This copy of the app doesn't support CV upload yet — please pull the latest code from GitHub, or paste your CV below instead.",
+        );
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok || typeof data?.text !== "string" || !data.text.trim()) {
         setError(

@@ -48,8 +48,15 @@ Multipart form upload with a `file` field (PDF, DOCX, TXT or MD, max 5 MB).
 
 Success: `200 { "text": "...", "filename": "...", "truncated": false }`
 
-Errors (JSON `{ "error": "..." }`):
-- `400` — no file, unsupported type, file over 5 MB, empty file, or no text could be read
+Errors (JSON `{ "error": "...", "code": "..." }`):
+- `400` `no_file` — no file was uploaded
+- `400` `unsupported_type` — not a PDF, DOCX, TXT or MD file
+- `400` `too_large` — file over 5 MB
+- `400` `empty_file` — file is empty
+- `400` `no_text` — the file parsed but has no selectable text (e.g. a scanned or image-only PDF)
+- `400` `parse_failed` — the file could not be parsed (damaged, password-protected, or an unusual format)
+
+PDFs are read with pdf-parse first, with pdfjs-dist as a fallback — the two parsers fail on different files, so a PDF one rejects the other can often still read.
 
 `POST /api/generate`
 
