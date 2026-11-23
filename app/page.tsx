@@ -21,6 +21,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   // Restore the last generated letter so a refresh does not lose it.
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function Home() {
       return;
     }
     if (cv.trim().length < 50) {
-      setError("Your CV must be at least 50 characters. Add your experience, skills, and projects.");
+      setError("Your CV/Resume must be at least 50 characters. Add your experience, skills, and projects.");
       return;
     }
 
@@ -83,6 +85,48 @@ export default function Home() {
     }
   }
 
+  async function handleCvUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Reset the input so the same file can be chosen again.
+    e.target.value = "";
+    if (!file) return;
+
+    setError("");
+    if (file.size > 5 * 1024 * 1024) {
+      setError("That file is too large — please upload a file under 5 MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/extract-cv", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || typeof data?.text !== "string" || !data.text.trim()) {
+        setError(
+          typeof data?.error === "string"
+            ? data.error
+            : "Could not read that file — try a PDF, DOCX or TXT file, or paste your CV instead.",
+        );
+        return;
+      }
+      setCv(data.text.trim());
+      setUploadedFileName(typeof data?.filename === "string" ? data.filename : file.name);
+      if (data?.truncated) {
+        setError("Your CV was longer than 12,000 characters, so it was trimmed to fit. Edit it below if needed.");
+      }
+    } catch {
+      setError("Could not read that file — try a PDF, DOCX or TXT file, or paste your CV instead.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleRemoveUpload() {
+    setUploadedFileName("");
+  }
+
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(letter);
@@ -106,6 +150,7 @@ export default function Home() {
   function handleClear() {
     setJobDescription("");
     setCv("");
+    setUploadedFileName("");
     setName("");
     setJobTitle("");
     setTone("Professional");
@@ -125,7 +170,7 @@ export default function Home() {
           Cover Letter Tailor
         </h1>
         <p className="mt-2 text-base text-slate-600">
-          Paste a job, paste your CV, get a tailored cover letter in 30 seconds.
+          Upload your CV, paste a job, get a tailored cover letter in 30 seconds.
         </p>
       </header>
 
@@ -140,7 +185,7 @@ export default function Home() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Usman Abeeb"
+              placeholder="John Doe"
               maxLength={120}
               className={inputClass}
             />
@@ -181,13 +226,45 @@ export default function Home() {
 
         <div className="mt-2">
           <label htmlFor="cv" className={labelClass}>
-            Your CV / experience <span className="text-red-600">*</span>
+            Your CV / Resume <span className="text-red-600">*</span>
           </label>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <label
+              htmlFor="cv-upload"
+              className={`cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:border-teal-700 hover:text-teal-700 ${
+                uploading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
+              {uploading ? "Reading your CV…" : "Upload your CV / Resume"}
+            </label>
+            <input
+              id="cv-upload"
+              type="file"
+              accept=".pdf,.docx,.txt,.md"
+              onChange={handleCvUpload}
+              disabled={uploading}
+              className="hidden"
+            />
+            <span className="text-xs text-slate-400">PDF, DOCX, TXT or MD · max 5 MB</span>
+            {uploadedFileName && (
+              <span className="flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-800">
+                {uploadedFileName}
+                <button
+                  type="button"
+                  onClick={handleRemoveUpload}
+                  aria-label={`Remove ${uploadedFileName}`}
+                  className="font-bold hover:text-red-600"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+          </div>
           <textarea
             id="cv"
             value={cv}
             onChange={(e) => setCv(e.target.value)}
-            placeholder="Paste your CV, experience, skills, and projects here…"
+            placeholder="Upload your CV/Resume above, or paste it here…"
             rows={7}
             maxLength={12000}
             className={inputClass}

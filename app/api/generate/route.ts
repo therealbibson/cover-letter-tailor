@@ -11,8 +11,8 @@ const bodySchema = z.object({
   cv: z
     .string()
     .trim()
-    .min(50, "Your CV must be at least 50 characters.")
-    .max(12000, "Your CV must be 12,000 characters or fewer."),
+    .min(50, "Your CV/Resume must be at least 50 characters.")
+    .max(12000, "Your CV/Resume must be 12,000 characters or fewer."),
   name: z.string().trim().max(120).optional().default(""),
   jobTitle: z.string().trim().max(200).optional().default(""),
   tone: z.enum(["Professional", "Friendly", "Confident"]).optional().default("Professional"),
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const issue = parsed.error.issues[0];
     const message =
       issue?.code === "invalid_type"
-        ? "Job description and CV are both required."
+        ? "Job description and CV/Resume are both required."
         : (issue?.message ?? "Invalid input.");
     return NextResponse.json({ error: message }, { status: 400 });
   }

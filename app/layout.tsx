@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Cover Letter Tailor",
   description:
-    "Paste a job, paste your CV, get a tailored cover letter in 30 seconds.",
+    "Upload your CV, paste a job, get a tailored cover letter in 30 seconds.",
 };
 
 export default function RootLayout({

@@ -1,12 +1,12 @@
 # Cover Letter Tailor
 
-Paste a job, paste your CV, get a tailored cover letter in 30 seconds.
+Upload your CV, paste a job, get a tailored cover letter in 30 seconds.
 
 Dead-simple v1 for tech job seekers, worldwide. No login, no signup, no database.
 
 ## What it does
 
-- One page: job description + CV (+ optional name, job title/company, tone)
+- One page: upload your CV/Resume (PDF, DOCX, TXT or MD, max 5 MB) or paste it, plus the job description (+ optional name, job title/company, tone)
 - Tone: Professional (default), Friendly, or Confident
 - Generates a concise cover letter (250-350 words, 3-4 short paragraphs) using Google Gemini
 - Uses only facts from the CV — it is prompted not to invent employers, dates, skills, or achievements
@@ -17,6 +17,7 @@ Dead-simple v1 for tech job seekers, worldwide. No login, no signup, no database
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
 - Google Gemini (`@google/generative-ai`, model `gemini-2.5-flash`, with fallback to `gemini-2.0-flash`)
+- CV upload extraction via `POST /api/extract-cv`: PDF with `pdf-parse`, DOCX with `mammoth`, TXT/MD as plain text
 - Input validation with Zod
 - Single repo, Vercel-ready. No separate backend, no auth, no database in v1.
 
@@ -42,6 +43,15 @@ Open http://localhost:3000
 
 ## API
 
+`POST /api/extract-cv`
+
+Multipart form upload with a `file` field (PDF, DOCX, TXT or MD, max 5 MB).
+
+Success: `200 { "text": "...", "filename": "...", "truncated": false }`
+
+Errors (JSON `{ "error": "..." }`):
+- `400` — no file, unsupported type, file over 5 MB, empty file, or no text could be read
+
 `POST /api/generate`
 
 Body (JSON):
@@ -50,7 +60,7 @@ Body (JSON):
 {
   "jobDescription": "... (50-12,000 chars, required)",
   "cv": "... (50-12,000 chars, required)",
-  "name": "Usman Abeeb (optional)",
+  "name": "John Doe (optional)",
   "jobTitle": "Frontend Developer at Acme (optional)",
   "tone": "Professional | Friendly | Confident (optional, default Professional)"
 }
@@ -68,7 +78,7 @@ Errors (JSON `{ "error": "..." }`, no stack traces or keys):
 - Login / signup, accounts, saved history on a server
 - Database
 - Payments / paywall
-- ATS score, multiple templates, or CV upload (paste text only)
+- ATS score, multiple templates, or CV upload for other formats
 - Separate Express backend
 
 Add those only if v1 gets real use.
