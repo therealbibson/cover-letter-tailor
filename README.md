@@ -25,8 +25,7 @@ Dead-simple v1 for tech job seekers, worldwide. No login, no signup, no database
 
 ```bash
 npm install
-cp .env.example .env.local
-# Add your key to .env.local:
+# Create .env.local and add your key to it:
 # GEMINI_API_KEY=your-key-here
 # Get a free key from Google AI Studio: https://aistudio.google.com/app/apikey
 npm run dev
@@ -36,7 +35,7 @@ Open http://localhost:3000
 
 ## Deploy to Vercel
 
-1. Push this repo to GitHub (do not commit `.env.local` — it is gitignored).
+1. Push this repo to GitHub (do not commit `.env.local` or `.env.example` — both are gitignored).
 2. Import it in Vercel.
 3. Add the environment variable `GEMINI_API_KEY` in the Vercel project settings.
 4. Deploy. No other configuration needed.
