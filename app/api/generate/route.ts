@@ -18,7 +18,16 @@ const bodySchema = z.object({
   tone: z.enum(["Professional", "Friendly", "Confident"]).optional().default("Professional"),
 });
 
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"] as const;
+// Gemini 2.x models return 404 for new API keys/projects (Google retired
+// them for new users in Sep 2026 and suggests gemini-3.8-flash). Primary is
+// gemini-3.5-flash, which works on a free AI Studio key; 3.8-flash is
+// Google's suggested replacement but is often overloaded (503), so the
+// lite model is a third fallback.
+const MODELS = [
+  "gemini-3.5-flash",
+  "gemini-3.8-flash",
+  "gemini-3.5-flash-lite",
+] as const;
 
 async function generateWithModel(
   apiKey: string,
@@ -95,10 +104,14 @@ export async function POST(request: Request) {
     } catch (err) {
       lastError = err;
       const message = err instanceof Error ? err.message : String(err);
-      // Only fall back to the second model for a model-not-found style error.
-      const isModelError =
-        /not found|404|model/i.test(message) && modelName === MODELS[0];
-      if (!isModelError) break;
+      // Try the next model for a retired-model (404), overloaded (503),
+      // or rate-limited (429) error. Anything else (e.g. a bad key) is
+      // not worth retrying with another model.
+      const isRetryable =
+        /not found|404|model|503|429|overloaded|high demand|unavailable/i.test(
+          message,
+        );
+      if (!isRetryable) break;
     }
   }
 
